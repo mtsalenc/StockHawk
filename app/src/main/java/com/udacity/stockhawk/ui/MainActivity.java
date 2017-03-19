@@ -119,6 +119,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     void addStock(String symbol) {
         if (symbol != null && !symbol.isEmpty()) {
 
+            PrefUtils.addStock(this, symbol);
+
             if (networkUp()) {
                 swipeRefreshLayout.setRefreshing(true);
             } else {
@@ -126,7 +128,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 Toast.makeText(this, message, Toast.LENGTH_LONG).show();
             }
 
-            PrefUtils.addStock(this, symbol);
             QuoteSyncJob.syncImmediately(this);
         }
     }

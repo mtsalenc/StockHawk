@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.util.Log;
 
 import com.udacity.stockhawk.data.Contract;
 import com.udacity.stockhawk.data.PrefUtils;
@@ -48,6 +49,8 @@ public final class QuoteSyncJob {
         Calendar to = Calendar.getInstance();
         from.add(Calendar.YEAR, -YEARS_OF_HISTORY);
 
+        Set<String> invalidStockSymbols = new HashSet<>();
+
         try {
 
             Set<String> stockPref = PrefUtils.getStocks(context);
@@ -68,12 +71,17 @@ public final class QuoteSyncJob {
 
             ArrayList<ContentValues> quoteCVs = new ArrayList<>();
 
+            outer:
             while (iterator.hasNext()) {
                 String symbol = iterator.next();
 
-
                 Stock stock = quotes.get(symbol);
                 StockQuote quote = stock.getQuote();
+
+                if(quote.getPrice()==null){
+                    invalidStockSymbols.add(symbol);
+                    continue outer;
+                }
 
                 float price = quote.getPrice().floatValue();
                 float change = quote.getChange().floatValue();
@@ -112,6 +120,8 @@ public final class QuoteSyncJob {
 
             Intent dataUpdatedIntent = new Intent(ACTION_DATA_UPDATED);
             context.sendBroadcast(dataUpdatedIntent);
+
+            Timber.d("Invalid symbols: "+invalidStockSymbols.toString());
 
         } catch (IOException exception) {
             Timber.e(exception, "Error fetching stock quotes");
@@ -163,7 +173,6 @@ public final class QuoteSyncJob {
             JobScheduler scheduler = (JobScheduler) context.getSystemService(Context.JOB_SCHEDULER_SERVICE);
 
             scheduler.schedule(builder.build());
-
 
         }
     }
