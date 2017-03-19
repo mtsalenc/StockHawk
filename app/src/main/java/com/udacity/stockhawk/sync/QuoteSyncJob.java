@@ -1,5 +1,7 @@
 package com.udacity.stockhawk.sync;
 
+import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
 import android.content.ComponentName;
@@ -8,13 +10,16 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
+import com.udacity.stockhawk.R;
 import com.udacity.stockhawk.data.Contract;
 import com.udacity.stockhawk.data.PrefUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -29,6 +34,9 @@ import yahoofinance.histquotes.HistoricalQuote;
 import yahoofinance.histquotes.Interval;
 import yahoofinance.quotes.stock.StockQuote;
 
+import static android.content.Context.NOTIFICATION_SERVICE;
+import static android.support.v4.app.NotificationCompat.PRIORITY_MIN;
+
 public final class QuoteSyncJob {
 
     private static final int ONE_OFF_ID = 2;
@@ -37,6 +45,7 @@ public final class QuoteSyncJob {
     private static final int INITIAL_BACKOFF = 10000;
     private static final int PERIODIC_ID = 1;
     private static final int YEARS_OF_HISTORY = 2;
+    private static final int NOTIFICATION_ID = 1;
 
     private QuoteSyncJob() {
     }
@@ -50,13 +59,12 @@ public final class QuoteSyncJob {
         from.add(Calendar.YEAR, -YEARS_OF_HISTORY);
 
         Set<String> invalidStockSymbols = new HashSet<>();
-
+        String[] stockArray = new String[0];
         try {
-
             Set<String> stockPref = PrefUtils.getStocks(context);
             Set<String> stockCopy = new HashSet<>();
             stockCopy.addAll(stockPref);
-            String[] stockArray = stockPref.toArray(new String[stockPref.size()]);
+            stockArray = stockPref.toArray(new String[stockPref.size()]);
 
             Timber.d(stockCopy.toString());
 
@@ -66,8 +74,6 @@ public final class QuoteSyncJob {
 
             Map<String, Stock> quotes = YahooFinance.get(stockArray);
             Iterator<String> iterator = stockCopy.iterator();
-
-            Timber.d(quotes.toString());
 
             ArrayList<ContentValues> quoteCVs = new ArrayList<>();
 
@@ -121,20 +127,47 @@ public final class QuoteSyncJob {
             Intent dataUpdatedIntent = new Intent(ACTION_DATA_UPDATED);
             context.sendBroadcast(dataUpdatedIntent);
 
-            Timber.d("Invalid symbols: "+invalidStockSymbols.toString());
+            if(invalidStockSymbols.size()>0) {
+                Timber.d("Invalid symbols: " + invalidStockSymbols.toString());
+                notifyInvalidSymbols(invalidStockSymbols,context);
+
+
+                for (String stock : invalidStockSymbols)
+                    PrefUtils.removeStock(context, stock);
+
+            }
 
         } catch (IOException exception) {
             Timber.e(exception, "Error fetching stock quotes");
+            Timber.e(Arrays.toString(stockArray));
         }
+    }
+
+    private static void notifyInvalidSymbols(Set<String> invalidStockSymbols, Context context) {
+        String bigMessage = "";
+        for(String stock: invalidStockSymbols)
+            bigMessage += stock+"\n";
+
+        NotificationCompat.Builder builder =
+                new NotificationCompat.Builder(context)
+                        .setSmallIcon(R.drawable.ic_dollar)
+                        .setContentTitle("Invalid stock symbols")
+                        .setContentText("Removed invalid custom stock symbols:")
+                        .setStyle(new NotificationCompat.BigTextStyle().bigText(bigMessage));
+
+
+
+        NotificationManager manager =
+                (NotificationManager) context.getSystemService(NOTIFICATION_SERVICE);
+
+        manager.notify(NOTIFICATION_ID,builder.build());
+
     }
 
     private static void schedulePeriodic(Context context) {
         Timber.d("Scheduling a periodic task");
 
-
         JobInfo.Builder builder = new JobInfo.Builder(PERIODIC_ID, new ComponentName(context, QuoteJobService.class));
-
-
         builder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
                 .setPeriodic(PERIOD)
                 .setBackoffCriteria(INITIAL_BACKOFF, JobInfo.BACKOFF_POLICY_EXPONENTIAL);
