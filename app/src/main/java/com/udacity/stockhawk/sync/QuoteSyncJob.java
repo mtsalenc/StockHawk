@@ -1,6 +1,5 @@
 package com.udacity.stockhawk.sync;
 
-import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
@@ -11,7 +10,6 @@ import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.support.v4.app.NotificationCompat;
-import android.util.Log;
 
 import com.udacity.stockhawk.R;
 import com.udacity.stockhawk.data.Contract;
@@ -35,7 +33,6 @@ import yahoofinance.histquotes.Interval;
 import yahoofinance.quotes.stock.StockQuote;
 
 import static android.content.Context.NOTIFICATION_SERVICE;
-import static android.support.v4.app.NotificationCompat.PRIORITY_MIN;
 
 public final class QuoteSyncJob {
 
@@ -77,16 +74,20 @@ public final class QuoteSyncJob {
 
             ArrayList<ContentValues> quoteCVs = new ArrayList<>();
 
-            outer:
             while (iterator.hasNext()) {
                 String symbol = iterator.next();
+
+                if(quotes.get(symbol)==null){
+                    invalidStockSymbols.add(symbol);
+                    continue;
+                }
 
                 Stock stock = quotes.get(symbol);
                 StockQuote quote = stock.getQuote();
 
                 if(quote.getPrice()==null){
                     invalidStockSymbols.add(symbol);
-                    continue outer;
+                    continue;
                 }
 
                 float price = quote.getPrice().floatValue();
@@ -151,8 +152,8 @@ public final class QuoteSyncJob {
         NotificationCompat.Builder builder =
                 new NotificationCompat.Builder(context)
                         .setSmallIcon(R.drawable.ic_dollar)
-                        .setContentTitle("Invalid stock symbols")
-                        .setContentText("Removed invalid custom stock symbols:")
+                        .setContentTitle(context.getString(R.string.invalid_stock_symbols_message))
+                        .setContentText(context.getString(R.string.invalid_stocks_removal_message))
                         .setStyle(new NotificationCompat.BigTextStyle().bigText(bigMessage));
 
 
