@@ -1,5 +1,6 @@
 package com.udacity.stockhawk;
 
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
@@ -8,6 +9,7 @@ import android.widget.RemoteViewsService;
 
 import com.udacity.stockhawk.data.Contract;
 import com.udacity.stockhawk.data.PrefUtils;
+import com.udacity.stockhawk.ui.MainActivity;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -23,6 +25,7 @@ class WidgetDataProvider implements RemoteViewsService.RemoteViewsFactory {
 
 
     private static final String TAG = "WidgetDataProvider";
+    private static final String ACTION_APP_OPEN = "open";
     List<String> mCollection = new ArrayList<>();
 
     private final DecimalFormat dollarFormatWithPlus;

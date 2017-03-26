@@ -10,6 +10,7 @@ import android.os.Build;
 import android.support.annotation.NonNull;
 import android.widget.ListView;
 import android.widget.RemoteViews;
+import android.widget.Toast;
 
 import com.udacity.stockhawk.sync.QuoteSyncJob;
 import com.udacity.stockhawk.ui.MainActivity;
@@ -19,6 +20,7 @@ import com.udacity.stockhawk.ui.MainActivity;
  */
 
 public class StockWidgetProvider extends AppWidgetProvider {
+
 
 
     @Override
@@ -48,9 +50,6 @@ public class StockWidgetProvider extends AppWidgetProvider {
     public void onDisabled(Context context) {
         // Enter relevant functionality for when the last widget is disabled
     }
-
-
-
 
 
 }
